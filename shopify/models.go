@@ -1,5 +1,8 @@
 package shopify
-import "time"
+
+import (
+	"time"
+)
 
 type Order struct {
 	ID         string    `json:"id"`

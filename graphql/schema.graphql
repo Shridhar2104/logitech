@@ -55,6 +55,7 @@ input OrderInput {
 
 type Mutation {
     createAccount(Account: AccountInput!): Account!
+    integrateShop(shopName: String!): String!
 }
 
 type Query {

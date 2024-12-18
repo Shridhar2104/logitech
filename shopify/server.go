@@ -3,11 +3,12 @@ package shopify
 import (
 	"context"
 	"fmt"
+
 	"net"
 
+	"github.com/Shridhar2104/logilo/shopify/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"github.com/Shridhar2104/logilo/shopify/pb"
 )
 type grpcServer struct {
 	pb.UnimplementedShopifyServiceServer
@@ -29,16 +30,33 @@ func NewGRPCServer(service Service, port int) error {
 	return server.Serve(lis)
 }
 
-func (s *grpcServer) SyncOrders(ctx context.Context, r *pb.SyncOrdersRequest) (*pb.SyncOrdersResponse, error) {
+func(s * grpcServer) GetAuthorizationURL(ctx context.Context, r *pb.GetAuthorizationURLRequest) (*pb.GetAuthorizationURLResponse, error){
+	authUrl , err:= s.service.GenerateAuthURL(ctx,r.ShopName, r.State)
 
-	err := s.service.SyncOrders(ctx, r.ShopName, r.SinceId, int(r.Limit), r.Token)
-	if err != nil {
+	if err!= nil{
 		return nil, err
 	}
-	return &pb.SyncOrdersResponse{}, nil
 
+	return &pb.GetAuthorizationURLResponse{
+		AuthUrl: authUrl,
+		}, nil
+}
+
+func(s *grpcServer) ExchangeAccessToken(ctx context.Context, r *pb.ExchangeAccessTokenRequest) (*pb.ExchangeAccessTokenResponse, error){
+	err := s.service.ExchangeAccessToken(ctx,r.ShopName,r.Code, r.AccountId)
+
+	if err!= nil{
+		return &pb.ExchangeAccessTokenResponse{
+			Success: false,
+		}, err
+	
+	}
+	return &pb.ExchangeAccessTokenResponse{
+		Success: true,
+	}, nil
 
 }
+
 func (s *grpcServer) GetOrdersForShopAndAccount(ctx context.Context, r *pb.GetOrdersForShopAndAccountRequest) (*pb.GetOrdersForShopAndAccountResponse, error){
 	orders, err := s.service.GetOrdersForShopAndAccount(ctx, r.ShopName, r.AccountId)
 	if err != nil {
@@ -59,25 +77,3 @@ func (s *grpcServer) GetOrdersForShopAndAccount(ctx context.Context, r *pb.GetOr
 	}, nil
 
 }
-func (s *grpcServer) UpdateOrder(ctx context.Context, r *pb.UpdateOrderRequest) (*pb.UpdateOrderResponse, error){
-
-	order := &Order{
-		ID: r.Order.Id,
-		ShopName: r.ShopName,
-		AccountId: r.AccountId,
-		TotalPrice: float64(r.Order.TotalPrice),
-	}
-	err := s.service.UpdateOrder(ctx, *order, r.AccountId, r.ShopName)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.UpdateOrderResponse{}, nil
-
-}
-func (s *grpcServer) StoreToken(ctx context.Context, r *pb.StoreTokenRequest) (*pb.StoreTokenResponse, error){
-	err := s.service.StoreToken(ctx, r.ShopName, r.AccountId, r.Token)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.StoreTokenResponse{}, nil
-}	

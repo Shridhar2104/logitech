@@ -34,3 +34,22 @@ func (r *mutationResolver) CreateAccount(ctx context.Context, input AccountInput
 		ShopNames: nil,
 	}, nil
 }
+
+// mutation_resolver.go
+
+func (r *mutationResolver) IntegrateShop(ctx context.Context, shopName string) (string, error) {
+    // Call the Shopify client to get the authorization URL
+    url, err := r.server.shopifyClient.GenerateAuthURL(ctx, shopName)
+    if err != nil {
+        return "", err
+    }
+    return url, nil
+}
+
+func (r *mutationResolver) ExchangeAccessToken(ctx context.Context, shopName, code, accountId string) (bool, error) {
+	err := r.server.shopifyClient.ExchangeAccessToken(ctx, shopName, code, accountId)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}

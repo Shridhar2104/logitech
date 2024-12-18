@@ -2,121 +2,87 @@ package shopify
 
 import (
 	"context"
-	"github.com/bold-commerce/go-shopify/v4"
 	"github.com/Shridhar2104/logilo/shopify/pb"
 	"google.golang.org/grpc"
+	"fmt"
 )
 
-// ShopifyClient wraps the goshopify client.
-type ShopifyClient struct {
-	app    *goshopify.App
-	client *goshopify.Client
-}
-
+// Client struct for gRPC communication.
 type Client struct {
-	conn *grpc.ClientConn
+	conn    *grpc.ClientConn
 	service pb.ShopifyServiceClient
 }
 
+// NewClient creates a new gRPC client.
 func NewClient(url string) (*Client, error) {
 	conn, err := grpc.Dial(url, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 
-	c:= pb.NewShopifyServiceClient(conn)
+	c := pb.NewShopifyServiceClient(conn)
 	return &Client{conn: conn, service: c}, nil
 }
 
-
-// NewShopifyClient initializes a new Shopify client with app credentials.
-func NewShopifyClient(apiKey, apiSecret, redirectURL string) *ShopifyClient {
-	app := &goshopify.App{
-		ApiKey:      apiKey,
-		ApiSecret:   apiSecret,
-		RedirectUrl: redirectURL,
-		Scope:       "read_products,read_orders",
-	}
-
-	return &ShopifyClient{app: app}
-}
-
+// Close closes the gRPC connection
 func (c *Client) Close() {
-	c.conn.Close()
-}
-
-
-// GetAuthorizationURL generates the OAuth URL for Shopify app installation.
-func (c *ShopifyClient) GetAuthorizationURL(shopName, state string) (string, error) {
-	authUrl, err := c.app.AuthorizeUrl(shopName, state)
-	if err != nil {
-		return "", err
+	if c.conn != nil {
+		c.conn.Close()
 	}
-	return authUrl, nil
-}
-
-// GetAccessToken fetches a permanent access token after the OAuth callback.
-func (c *ShopifyClient) GetAccessToken(ctx context.Context, shopName, code string) (string, error) {
-	return c.app.GetAccessToken(ctx, shopName, code)
-}
-
-// InitializeAPIClient creates an authenticated API client with the access token.
-func (c *ShopifyClient) InitializeAPIClient(shopName, token string) (error) {
-	var err error
-	c.client, err = goshopify.NewClient(*c.app, shopName, token)
-	return err
 }
 
 
-func (c *Client) GetOrdersForShopAndAccount(ctx context.Context, shopName string, accountId string) ([]*Order, error) {
+
+
+// GetOrdersForShopAndAccount fetches orders for a specific shop and account.
+func (c *Client) GetOrdersForShopAndAccount(ctx context.Context, shopName, accountId string) ([]*Order, error) {
 	res, err := c.service.GetOrdersForShopAndAccount(ctx, &pb.GetOrdersForShopAndAccountRequest{
-		ShopName: shopName,
+		ShopName:  shopName,
 		AccountId: accountId,
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	orders := make([]*Order, len(res.Orders))
+	for i, o := range res.Orders {
+		orders[i] = &Order{
+			ID:         o.Id,
+			ShopName:   shopName,
+			AccountId:  accountId,
+			TotalPrice: float64(o.TotalPrice),
+			OrderId:    o.OrderId,
+		}
+	}
 	return orders, nil
 }
+//http://djcajdjd?code=jfl&shopname
 
-func (c *Client) SyncOrders(ctx context.Context, shopName string, sinceId string, limit int, token string) error {
-	_, err:=  c.service.SyncOrders(ctx, &pb.SyncOrdersRequest{
-		ShopName: shopName,
-		SinceId: sinceId,
-		Limit: int32(limit),
-		Token: token,
-	})
-
-	return err
-}
-
-func (c *Client) UpdateOrder(ctx context.Context, shopName string, order *Order) (*Order, error) {
-	res, err := c.service.UpdateOrder(ctx, &pb.UpdateOrderRequest{	
-		ShopName: shopName,
-		Order: &pb.Order{
-			Id: order.ID,
-
-		},
-	})
-	if err != nil {
-		return nil, err
+// GenerateAuthURL generates an authorization URL for a Shopify store.
+func (c *Client) GenerateAuthURL(ctx context.Context, shopName string) (string, error) {
+	req := &pb.GetAuthorizationURLRequest{
+		ShopName:  shopName,
+		State: "your_unique_nonce",
+		
 	}
-	return &Order{
-		ID: res.Order.Id,
-		ShopName: shopName,
-		AccountId: res.Order.AccountId,
-		TotalPrice: float64(res.Order.TotalPrice),
-		OrderId: res.Order.OrderId,
-	}, nil
+	resp, err := c.service.GetAuthorizationURL(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate auth URL: %v", err)
+	}
+	return resp.AuthUrl, nil
 }
 
-func (c *Client) StoreToken(ctx context.Context, shopName string, accountId string, token string) error {
-	_, err := c.service.StoreToken(ctx, &pb.StoreTokenRequest{
-		ShopName: shopName,
+// ExchangeAccessToken exchanges a Shopify auth code for an access token.
+func (c *Client) ExchangeAccessToken(ctx context.Context, shopName, code, accountId string) error {
+	req := &pb.ExchangeAccessTokenRequest{
+		ShopName:  shopName,
+		Code:      code,
 		AccountId: accountId,
-		Token: token,
-	})
-	return err
+	}
+	_, err := c.service.ExchangeAccessToken(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to exchange access token: %v", err)
+	}
+	return nil
 }
 
