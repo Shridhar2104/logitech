@@ -1,0 +1,430 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "/pb";
+
+// Represents detailed order information
+message Order {
+    string id = 1;                   // Unique internal identifier of the order
+    string account_id = 2;           // Associated account ID
+    string shop_id = 3;              // Shopify shop ID
+    float total_price = 4;           // Total order price
+    string order_id = 5;             // Shopify's native order ID
+}
+
+message OrderLineItem{
+    string product_id = 1;
+    string variant_id = 2;
+    int32 quantity = 3;
+}
+
+message SyncOrdersRequest{
+
+    string shop_name = 1;
+    int32 limit = 2;
+    string since_id = 3;
+    string token = 4;
+
+}
+
+message SyncOrdersResponse{
+
+    repeated Order orders = 1;
+
+}
+
+message StoreTokenRequest{
+    string shop_name = 1;
+    string account_id = 2;
+    string token =3;
+
+}
+
+message StoreTokenResponse{
+    string token = 1;
+} 
+
+
+message GetOrdersForShopAndAccountRequest{
+    string shop_name = 1;
+    string account_id = 2;
+    string token =3;
+
+}
+
+message GetOrdersForShopAndAccountResponse{
+    repeated Order orders = 1;
+
+}
+
+message UpdateOrderRequest{
+    Order order = 1;
+    string account_id = 2;
+    string shop_name = 3;   
+
+}
+
+message UpdateOrderResponse{
+
+    Order order = 1;
+}
+
+
+// Represents shipping rate details
+message ShippingRate {
+    string courier_name = 1;         // Name of the courier service
+    float rate = 2;                  // Shipping rate cost
+    string estimated_delivery_time = 3; // Estimated delivery time
+    bool cod_supported = 4;          // COD support status
+}
+
+// Request to calculate shipping rates
+message CalculateShippingRatesRequest {
+    string order_id = 1;             // Order ID for which rates are being calculated
+    string from_pincode = 2;         // Origin pincode
+    string to_pincode = 3;           // Destination pincode
+    float weight = 4;                // Weight of the shipment
+    string account_id = 5;           // Associated account ID
+    string shop_name = 6;            // Shopify shop name
+}
+
+// Response with calculated shipping rates
+message CalculateShippingRatesResponse {
+    repeated ShippingRate rates = 1; // List of available shipping rates
+}
+
+// Request to fetch shipment details from Shopify
+message GetShipmentDetailsRequest {
+    string order_id = 1;             // Order ID to fetch shipment details
+    string account_id = 2;           // Associated account ID
+    string shop_name = 3;            // Shopify shop name
+}
+
+// Response with shipment details
+message GetShipmentDetailsResponse {
+    Shipment shipment = 1;           // Shipment details
+}
+
+// Shipment details for a specific order
+message Shipment {
+    string id = 1;                   // Shipment identifier
+    string order_id = 2;             // Associated order ID
+    string awb = 3;      // Tracking number for the shipment
+    string courier_name = 4;         // Name of the courier service
+    string status = 5;               // Shipment status
+    Address shipping_address = 6;    // Destination address
+}
+
+
+message ShipmentGraphqlRequest{
+    string order_id = 1;
+    string account_id = 2;
+    string courier_name = 3;
+}
+
+message ShipmentGraphqlResponse{
+    Shipment shipment = 1;
+}
+
+
+message CreateShipmentRequest{
+    string order_id = 1;
+    string account_id = 2;
+    string shop_name = 3;
+    string courier_name = 4;
+    string awb = 5;
+    string status = 6;
+    Address shipping_address = 7;
+    string from_pincode = 8;
+    string to_pincode = 9;
+    repeated OrderLineItem items = 10;
+}
+
+message CreateShipmentResponse{
+    Shipment shipment = 1;
+}
+
+
+
+// Address details
+message Address {
+    string name = 1;
+    string address1 = 2;
+    string address2 = 3;
+    string city = 4;
+    string province = 5;
+    string country = 6;
+    string postal_code = 7;
+    string phone = 8;
+}
+
+
+
+
+service ShopifyService{
+    rpc SyncOrders(SyncOrdersRequest) returns (SyncOrdersResponse);
+    rpc StoreToken(StoreTokenRequest) returns (StoreTokenResponse);
+    rpc GetOrdersForShopAndAccount(GetOrdersForShopAndAccountRequest) returns (GetOrdersForShopAndAccountResponse);
+    rpc UpdateOrder(UpdateOrderRequest) returns (UpdateOrderResponse);
+    rpc CalculateShippingRates(CalculateShippingRatesRequest) returns (CalculateShippingRatesResponse);
+    rpc GetShipmentDetails(GetShipmentDetailsRequest) returns (GetShipmentDetailsResponse);
+    rpc CreateShipment(CreateShipmentRequest) returns (CreateShipmentResponse);
+    rpc ShipmentGraphql(ShipmentGraphqlRequest) returns (ShipmentGraphqlResponse);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// message SyncOrdersRequest {
+//     string shop_name = 1;
+//     int32 limit = 2;
+//     string since_id = 3;
+//     string token = 4;
+// }
+
+// message SyncOrdersResponse {
+//     repeated Order orders = 1;
+// }
+
+// message StoreIntegrationRequest {
+//     string shop_name = 1;
+// }
+
+// message StoreIntegrationResponse {
+//     string shop_id = 1;
+// }
+
+
+// // Detailed Order representation with comprehensive fields
+// message Order {
+//     string id = 1;                       // Unique internal identifier of the order
+//     string account_id = 2;               // Associated account ID
+//     string shop_id = 3;                  // Shopify shop ID
+//     string order_name = 4;               // Name of the order
+//     string order_id = 5;                 // Shopify's native order ID
+//     string order_number = 6;             // Displayed order number
+//     string order_status = 7;             // Current status of the order
+//     double order_total = 8;              // Total amount for the order
+//     string order_created_at = 9;         // Creation timestamp of the order
+//     string order_updated_at = 10;        // Last updated timestamp of the order
+    
+//     // Additional order details
+//     repeated OrderLineItem line_items = 11;  // List of items in the order
+//     Address shipping_address = 12;           // Shipping address details
+//     string customer_id = 13;                 // Shopify customer ID
+//     string fulfillment_status = 14;          // Status of order fulfillment
+//     string financial_status = 15;            // Financial status of the order
+//     repeated string tags = 16;               // Order tags
+// }
+
+
+// // Represents a single line item in an order
+// message OrderLineItem {
+//     string product_id = 1;       // Unique product identifier
+//     string variant_id = 2;       // Product variant identifier
+//     string name = 3;             // Product name
+//     int32 quantity = 4;          // Quantity of the product
+//     double price = 5;            // Price of the item
+//     string sku = 6;              // Stock Keeping Unit
+// }
+
+// // Shipping address details
+// message Address {
+//     string name = 1;
+//     string address1 = 2;
+//     string address2 = 3;
+//     string city = 4;
+//     string province = 5;
+//     string country = 6;
+//     string postal_code = 7;
+//     string phone = 8;
+// }
+
+
+
+// // Request to create a new order
+// message CreateOrderRequest {
+//     Order order = 1;  // Comprehensive order details
+// }
+
+// // Response after creating an order
+// message CreateOrderResponse {
+//     Order order = 1;
+//     string message = 2;  // Optional additional message
+// }
+
+// // Request to get an order by its ID
+// message GetOrderByIDRequest {
+//     string id = 1;  // Either internal ID or Shopify order ID
+// }
+
+// // Response for GetOrderByIDRequest
+// message GetOrderByIDResponse {
+//     Order order = 1;
+// }
+
+// // Request to list orders with advanced filtering and pagination
+// message ListOrdersRequest {
+//     uint64 skip = 1;                   // Number of records to skip
+//     uint64 take = 2;                   // Number of records to fetch
+//     repeated string ids = 3;           // List of IDs to filter by
+//     string query = 4;                  // Flexible query string for filtering
+    
+//     // Additional filtering options
+//     string status_filter = 5;          // Filter by order status
+//     string date_from = 6;              // Start date for order creation
+//     string date_to = 7;                // End date for order creation
+//     string customer_id = 8;            // Filter by specific customer
+// }
+
+// // Response for ListOrdersRequest with pagination metadata
+// message ListOrdersResponse {
+//     repeated Order orders = 1;         // List of orders
+//     uint64 total_count = 2;            // Total number of orders available
+//     uint64 returned_count = 3;         // Number of orders in this response
+// }
+
+// // Request to update an existing order
+// message UpdateOrderRequest {
+//     Order order = 1;                   // Updated order details
+//     string update_mask = 2;            // Specify which fields to update
+// }
+
+// // Response after updating an order
+// message UpdateOrderResponse {
+//     Order order = 1;
+//     string message = 2;                // Optional additional message
+// }
+
+// // Detailed Shipment information
+// message Shipment {
+//     string id = 1;                     // Unique shipment identifier
+//     string order_id = 2;               // Associated order ID
+//     string order_number = 3;           // Order number
+//     string tracking_number = 4;        // Shipping tracking number
+//     string shipping_carrier = 5;       // Shipping carrier name
+//     string shipment_status = 6;        // Current status of the shipment
+//     string shipment_created_at = 7;    // Shipment creation timestamp
+//     string estimated_delivery_date = 8;// Estimated delivery date
+//     repeated ShipmentItem items = 9;   // Items in this shipment
+//     Address shipping_address = 10;     // Shipping destination
+// }
+
+// // Represents items in a shipment
+// message ShipmentItem {
+//     string product_id = 1;
+//     string variant_id = 2;
+//     int32 quantity = 3;
+// }
+// //shopify to shipment service
+// message ShippingRequest {
+//     string order_id = 1;
+//     repeated ShipmentItem items = 2;
+//     string shipping_carrier = 3;
+//     string tracking_number = 4;
+//     string shipment_status = 5;
+// }
+// message ShippingResponse {
+//     Shipment shipment = 1;
+//     string awb = 2;
+// }   
+
+// // Request to create a shipment graphql to shopify 
+// message CreateShipmentRequest {
+//     string order_id = 1;
+   
+// }
+
+// // Response after creating a shipment graphql to shopify 
+// message CreateShipmentResponse {
+//     Shipment shipment = 1;
+//     string awb = 2;
+// }
+
+// // Request to get shipment details
+// message GetShipmentRequest {
+//     string shipment_id = 1;
+//     string order_id = 2;
+// }
+
+// // Response with shipment details
+// message GetShipmentResponse {
+//     Shipment shipment = 1;
+// }
+
+// // Request to list shipments
+// message ListShipmentsRequest {
+//     uint64 skip = 1;
+//     uint64 take = 2;
+//     repeated string order_ids = 3;
+//     string status_filter = 4;
+// }
+
+// // Response with list of shipments
+// message ListShipmentsResponse {
+//     repeated Shipment shipments = 1;
+//     uint64 total_count = 2;
+// }
+
+// // Shopify service definition for comprehensive order and shipment operations
+// // Wallet transaction details for COD remittance
+// message WalletTransaction {
+//     string transaction_id = 1;       // Unique identifier for the transaction
+//     string order_id = 2;             // Associated order ID
+//     string user_id = 3;              // User's unique identifier
+//     double amount = 4;               // Amount to be credited
+//     string currency = 5;             // Transaction currency
+//     string transaction_type = 6;     // Type of transaction (e.g., COD_REMITTANCE)
+//     string status = 7;               // Transaction status (PENDING, COMPLETED, FAILED)
+//     string created_at = 8;           // Transaction creation timestamp
+//     string updated_at = 9;           // Transaction last update timestamp
+// }
+
+// // Request to process COD remittance
+// message ProcessCODRemittanceRequest {
+//     string order_id = 1;             // Order to process for remittance
+//     string user_id = 2;              // User receiving the remittance
+//     double amount = 3;               // Amount to be remitted
+//     string bank_account_id = 4;      // User's bank account for remittance
+// }
+
+// // Response from COD remittance process
+// message ProcessCODRemittanceResponse {
+//     bool success = 1;                // Whether remittance was successful
+//     WalletTransaction transaction = 2; // Details of the wallet transaction
+//     string error_message = 3;        // Detailed error if remittance failed
+// }
+
+// service ShopifyService {
+//     // Order-related RPCs
+//     rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+//     rpc GetOrderByID(GetOrderByIDRequest) returns (GetOrderByIDResponse);
+//     rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+//     rpc UpdateOrder(UpdateOrderRequest) returns (UpdateOrderResponse);
+//     rpc SyncOrders(SyncOrdersRequest) returns (SyncOrdersResponse);
+//     rpc StoreIntegration(StoreIntegrationRequest) returns (StoreIntegrationResponse);
+    
+//     // Shipment-related RPCs
+//     rpc CreateShipment(CreateShipmentRequest) returns (CreateShipmentResponse);
+//     rpc CreateShipmentGraphql(ShippingRequest) returns (ShippingResponse);
+//     rpc GetShipment(GetShipmentRequest) returns (GetShipmentResponse);
+//     rpc ListShipments(ListShipmentsRequest) returns (ListShipmentsResponse);
+
+    
+//     // COD Remittance RPCs
+//     rpc ProcessCODRemittance(ProcessCODRemittanceRequest) returns (ProcessCODRemittanceResponse);
+// }
